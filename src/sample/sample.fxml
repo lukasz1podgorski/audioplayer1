@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<GridPane alignment="center" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
+<GridPane alignment="center" hgap="10" prefHeight="297.0" prefWidth="470.0" vgap="10" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <columnConstraints>
       <ColumnConstraints />
    </columnConstraints>
@@ -18,7 +18,7 @@
       <RowConstraints />
    </rowConstraints>
    <children>
-      <Pane prefHeight="345.0" prefWidth="470.0">
+      <Pane prefHeight="295.0" prefWidth="470.0">
          <children>
             <Button fx:id="btnPlay" layoutX="91.0" layoutY="257.0" mnemonicParsing="false" onAction="#playFile" text="Play" />
             <Button fx:id="btnStop" layoutX="135.0" layoutY="257.0" mnemonicParsing="false" onAction="#stopFile" text="Stop" />

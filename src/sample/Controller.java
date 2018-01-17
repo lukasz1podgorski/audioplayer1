@@ -36,13 +36,17 @@ public class Controller implements Initializable {
     public Label albumLabel;
     public Label yearLabel;
     public ImageView albumCover;
-    MediaPlayer mediaPlayer;
-    Media media;
-    File musicFile;
+    FormatTime formatTime = new FormatTime();
+    Song song = new Song();
+    Player player = new Player();
     Duration duration;
     boolean atEndOfSong = false;
     boolean stopRequested = false;
     final boolean repeat = false;
+
+    public Duration getDuration() {
+        return duration;
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -51,15 +55,10 @@ public class Controller implements Initializable {
     public void openFile(ActionEvent actionEvent) {
 
         try{
-            FileChooser fc = new FileChooser();
-            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Music Files","*.wav","*.m4a","*.mp3"));
-            musicFile = fc.showOpenDialog(null);
-            String path = musicFile.getAbsolutePath();
-            path = path.replace("\\", "/");
+            song.initSong();
+            duration = song.getMediaPlayer().getMedia().getDuration();
 
-            media = new Media(new File(path).toURI().toString());
-
-            media.getMetadata().addListener(new MapChangeListener<String, Object>() {
+            song.getMedia().getMetadata().addListener(new MapChangeListener<String, Object>() {
                 @Override
                 public void onChanged(Change<? extends String, ? extends Object> ch) {
                     if (ch.wasAdded()) {
@@ -68,60 +67,63 @@ public class Controller implements Initializable {
                 }
             });
 
-            mediaPlayer = new MediaPlayer(media);
-            mediaPlayer.stop();
-            mediaPlayer.setAutoPlay(false);
+            player.listener();
 
-            mediaPlayer.currentTimeProperty().addListener(new InvalidationListener() {
-                @Override
-                public void invalidated(Observable observable) {
-                    updateValues();
-                }
-            });
-
-            mediaPlayer.setOnPlaying(new Runnable() {
-                public void run() {
-                    if (stopRequested) {
-                        mediaPlayer.pause();
-                        stopRequested = false;
-                    }
-                }
-            });
-
-            mediaPlayer.setOnReady(new Runnable() {
-                @Override
-                public void run() {
-                    duration = mediaPlayer.getMedia().getDuration();
-                    updateValues();
-                }
-            });
-
-            mediaPlayer.setCycleCount(repeat ? MediaPlayer.INDEFINITE : 1);
-            mediaPlayer.setOnEndOfMedia(new Runnable() {
-                @Override
-                public void run() {
-                    if (!repeat){
-                        atEndOfSong=true;
-                        stopRequested=true;
-                        mediaPlayer.stop();
-                    }
-                }
-            });
+//            song.getMediaPlayer().currentTimeProperty().addListener(new InvalidationListener() {
+//                @Override
+//                public void invalidated(Observable observable) {
+//                    updateValues();
+//
+//                }
+//            });
+//
+//            song.getMediaPlayer().setOnPlaying(new Runnable() {
+//                public void run() {
+//                    if (stopRequested) {
+////                        mediaPlayer.pause();
+//                        song.getMediaPlayer().pause();
+//                        stopRequested = false;
+//                    }
+//                }
+//            });
+//
+//            song.getMediaPlayer().setOnReady(new Runnable() {
+//                @Override
+//                public void run() {
+//                    duration = song.getMediaPlayer().getMedia().getDuration();
+//                    updateValues();
+//                }
+//            });
+//
+//            song.getMediaPlayer().setCycleCount(repeat ? MediaPlayer.INDEFINITE : 1);
+//            song.getMediaPlayer().setOnEndOfMedia(new Runnable() {
+//                @Override
+//                public void run() {
+//                    if (!repeat){
+//                        atEndOfSong=true;
+//                        stopRequested=true;
+//                        song.getMediaPlayer().stop();
+//                    }
+//                }
+//            });
 
             timeSlider.valueProperty().addListener(new InvalidationListener() {
                 @Override
                 public void invalidated(Observable observable) {
                     if (timeSlider.isValueChanging()) {
-                        mediaPlayer.seek(duration.multiply(timeSlider.getValue()/100));
+//                        song.getMediaPlayer().seek(duration.multiply(timeSlider.getValue()/100));
+                        song.getMediaPlayer().seek(duration.multiply(timeSlider.getValue()/100));
                     }
                 }
             });
 
-            volSlider.setValue(mediaPlayer.getVolume()*100);
+//            volSlider.setValue(mediaPlayer.getVolume()*100);
+            volSlider.setValue(song.getMediaPlayer().getVolume()*100);
             volSlider.valueProperty().addListener(new InvalidationListener() {
                 @Override
                 public void invalidated(Observable observable) {
-                    mediaPlayer.setVolume(volSlider.getValue()/100);
+//                    mediaPlayer.setVolume(volSlider.getValue()/100);
+                    song.getMediaPlayer().setVolume(volSlider.getValue()/100);
                 }
             });
 
@@ -132,87 +134,30 @@ public class Controller implements Initializable {
     }
 
     public void playFile(ActionEvent actionEvent) {
-
-        Status status = mediaPlayer.getStatus();
-        updateValues();
-
-        if ( status == Status.PAUSED
-                || status == Status.READY
-                || status == Status.STOPPED)
-        {
-            if (atEndOfSong) {
-                mediaPlayer.seek(mediaPlayer.getStartTime());
-                atEndOfSong = false;
-            }
-            mediaPlayer.play();
-            updateValues();
-        } else {
-            mediaPlayer.pause();
-            updateValues();
-        }
+        song.getMediaPlayer().play();
     }
 
     public void stopFile(ActionEvent actionEvent) {
-        mediaPlayer.stop();
-        updateValues();
+        song.getMediaPlayer().stop();
     }
 
     public void pauseFile(ActionEvent actionEvent) {
-        mediaPlayer.pause();
-        updateValues();
+        song.getMediaPlayer().pause();
     }
 
     protected void updateValues() {
         if (timeLabel != null && timeSlider != null && duration != null) {
             Platform.runLater(new Runnable() {
                 public void run() {
-                    Duration currentTime = mediaPlayer.getCurrentTime();
-                    timeLabel.setText(formatTime(currentTime, duration));
+//                    Duration currentTime = mediaPlayer.getCurrentTime();
+                    Duration currentTime = song.getMediaPlayer().getCurrentTime();
+                    timeLabel.setText(formatTime.formatTime(currentTime, duration));
                     timeSlider.setDisable(duration.isUnknown());
                     if (!timeSlider.isDisabled() && duration.greaterThan(Duration.ZERO) && !timeSlider.isValueChanging()) {
                         timeSlider.setValue(currentTime.divide(duration).toMillis() * 100.0);
                     }
                 }
             });
-        }
-    }
-
-    private static String formatTime(Duration elapsed, Duration duration) {
-        int intElapsed = (int)Math.floor(elapsed.toSeconds());
-        int elapsedHours = intElapsed / (60 * 60);
-        if (elapsedHours > 0) {
-            intElapsed -= elapsedHours * 60 * 60;
-        }
-        int elapsedMinutes = intElapsed / 60;
-        int elapsedSeconds = intElapsed - elapsedHours * 60 * 60
-                - elapsedMinutes * 60;
-
-        if (duration.greaterThan(Duration.ZERO)) {
-            int intDuration = (int)Math.floor(duration.toSeconds());
-            int durationHours = intDuration / (60 * 60);
-            if (durationHours > 0) {
-                intDuration -= durationHours * 60 * 60;
-            }
-            int durationMinutes = intDuration / 60;
-            int durationSeconds = intDuration - durationHours * 60 * 60 -
-                    durationMinutes * 60;
-            if (durationHours > 0) {
-                return String.format("%d:%02d:%02d/%d:%02d:%02d",
-                        elapsedHours, elapsedMinutes, elapsedSeconds,
-                        durationHours, durationMinutes, durationSeconds);
-            } else {
-                return String.format("%02d:%02d/%02d:%02d",
-                        elapsedMinutes, elapsedSeconds,durationMinutes,
-                        durationSeconds);
-            }
-        } else {
-            if (elapsedHours > 0) {
-                return String.format("%d:%02d:%02d", elapsedHours,
-                        elapsedMinutes, elapsedSeconds);
-            } else {
-                return String.format("%02d:%02d",elapsedMinutes,
-                        elapsedSeconds);
-            }
         }
     }
 
